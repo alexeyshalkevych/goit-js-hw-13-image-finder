@@ -53,6 +53,7 @@
     "core-js": "^3.3.4",
     "handlebars": "^4.5.3",
     "material-design-icons": "^3.0.1",
-    "pnotify": "^4.0.0"
+    "pnotify": "^4.0.0",
+    "regenerator-runtime": "^0.13.3"
   }
 }
