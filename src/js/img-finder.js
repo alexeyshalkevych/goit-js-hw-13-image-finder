@@ -17,31 +17,43 @@ createImageList();
 const testSearchForm = document.querySelector('#search-form');
 const testImageList = document.querySelector('.js-gallery');
 // refs.loadMoreBtn.addEventListener('click', )
-testSearchForm.addEventListener('submit', testHAndleSubmit);
+testSearchForm.addEventListener('submit', testHandleSubmit);
 
-function testHAndleSubmit(event) {
+function testHandleSubmit(event) {
   event.preventDefault();
 
   const inputValue = event.currentTarget.elements.query.value;
-  console.log(inputValue);
 
-  axiosImages(inputValue);
+  clearListItems();
+  imagesService.resetPage();
+  imagesService.searchQuery = inputValue;
+
+  axiosImages();
 }
 
-function axiosImages(query) {
+function axiosImages() {
   imagesService
-    .axiosImages(query)
+    .axiosImages()
     .then(data => {
       insertListItems(data.hits);
 
       createBtnLoadMore();
+
+      const loadMoreBtn = document.querySelector(
+        'button[data-action="load-more"]',
+      );
+
+      loadMoreBtn.addEventListener('click', loadMoreButtonHadlerCLick);
     })
     .catch(console.error);
 }
 
+function loadMoreButtonHadlerCLick() {
+  axiosImages();
+}
+
 function insertListItems(item) {
   const markup = photoCardItemsTemplate(item);
-  console.log(markup);
   testImageList.insertAdjacentHTML('beforeend', markup);
 }
 
@@ -58,4 +70,8 @@ function createBtnLoadMore() {
     'beforeend',
     loadMoreButtonTemplate(),
   );
+}
+
+function clearListItems() {
+  testImageList.innerHTML = '';
 }
