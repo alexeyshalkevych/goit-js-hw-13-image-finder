@@ -1,60 +1,38 @@
 import imagesService from './services/api-service.js';
 import searchFormTemplate from '../templates/search-form.hbs';
-import galleryListTemplate from '../templates/gallery-list.hbs';
+import photoCardListTemplate from '../templates/photo-card-list.hbs';
 import photoCardItemsTemplate from '../templates/photo-card-items.hbs';
 import loadMoreButtonTemplate from '../templates/load-button.hbs';
 import searchImagesAppTemplate from '../templates/search-image-app.hbs';
 
-class imageApp {
+class searchImageApp {
   constructor() {
     this.body = null;
+    this.app = null;
     this.searchForm = null;
     this.imageList = null;
     this.loadMoreBtn = null;
-    this.app = null;
     this.inputValue = null;
 
     this.init();
-    this.addEvent();
   }
 
   init() {
-    this.getDom();
+    this.body = document.querySelector('body');
 
-    // this.createDomElement(this.body, searchImagesAppTemplate());
-    // this.createDomElement(this.body, searchImagesAppTemplate());
-    this.createDomElement(this.app, searchFormTemplate());
-    this.createDomElement(this.app, galleryListTemplate());
-
-  }
-
-  getDom() {
-    // this.body = document.querySelector('body');
+    this.createDomElement(this.body, searchImagesAppTemplate(), 'afterbegin');
     this.app = document.querySelector('.js-app');
-    this.searchForm = document.querySelector('#search-form');
-    this.imageList = document.querySelector('.js-gallery');
-    this.loadMoreBtn = document.querySelector(
-      'button[data-action="load-more"]',
-    );
-    console.log(this.body);
-    console.log(this.app);
-    console.log(this.searchForm);
-    console.log(this.imageList);
-    console.log(this.loadMoreBtn);
+
+    this.createDomElement(this.app, searchFormTemplate(), 'beforeend');
+    this.createDomElement(this.app, photoCardListTemplate(), 'beforeend');
+    this.searchForm = document.querySelector('.js-search-form');
+    this.imageList = document.querySelector('.js-card-list');
+
+    this.searchForm.addEventListener('submit', this.handlerSubmit.bind(this));
   }
 
-  createDomElement(insertElem, element) {
-    insertElem.insertAdjacentHTML('beforeend', element);
-  }
-
-  // createDom() {
-  //   this.body.insertAdjacentHTML('beforeend', searchImagesAppTemplate());
-  //   this.app.insertAdjacentHTML('beforeend', searchFormTemplate());
-  //   this.app.insertAdjacentHTML('beforeend', galleryListTemplate());
-  // }
-
-  addEvent() {
-    this.searchForm.addEventListener('submit', this.handlerSubmit);
+  createDomElement(insertElem, element, path) {
+    insertElem.insertAdjacentHTML(path, element);
   }
 
   handlerSubmit(event) {
@@ -62,9 +40,9 @@ class imageApp {
 
     this.input = event.currentTarget.elements.query;
 
-    this.clearListItems();
-
+    this.clearImageListItems();
     imagesService.resetPage();
+
     imagesService.searchQuery = this.input.value;
 
     this.axiosImages();
@@ -72,39 +50,48 @@ class imageApp {
     this.input.value = '';
   }
 
-  loadMoreButtonHadlerCLick() {
-    this.axiosImages();
-  }
-
   axiosImages() {
     imagesService
       .axiosImages()
       .then(data => {
-        this.insertListItems(data.hits);
+        if (data.hits.length) {
+          this.insertListItems(data.hits);
+        }
       })
       .catch(console.error);
   }
 
   insertListItems(item) {
+   
     if (!this.imageList.children.length) {
-      this.createDomElement(this.app, loadMoreButtonTemplate());
+      this.createDomElement(this.app, loadMoreButtonTemplate(), 'beforeend');
+      this.loadMoreBtn = document.querySelector(
+        'button[data-action="load-more"]',
+      );
 
       this.loadMoreBtn.addEventListener(
         'click',
-        this.loadMoreButtonHadlerCLick,
+        this.loadMoreButtonHadlerCLick.bind(this),
       );
     }
 
-    this.createDomElement(this.imageList, photoCardItemsTemplate(item));
+    this.createDomElement(
+      this.imageList,
+      photoCardItemsTemplate(item),
+      'beforeend',
+    );
   }
 
-  clearListItems() {
+  loadMoreButtonHadlerCLick() {
+    this.axiosImages();
+  }
+
+  clearImageListItems() {
     this.imageList.innerHTML = '';
   }
 }
 
-new imageApp();
-
+new searchImageApp();
 // const refs = {
 //   searchImagesApp: document.querySelector('.js-app'),
 //   // searchForm: document.querySelector('#search-form'),
