@@ -54,14 +54,16 @@ class searchImageApp {
       .then(data => {
         if (data.hits.length) {
           this.insertListItems(data.hits);
+          window.scrollTo({
+            top: this.loadMoreBtn.offsetTop,
+            behavior: 'smooth',
+          });
         }
       })
       .catch(console.error);
   }
 
   insertListItems(item) {
-    
-
     if (!this.imageList.children.length && !this.loadMoreBtn) {
       this.createDomElement(this.app, loadMoreButtonTemplate(), 'beforeend');
       this.loadMoreBtn = document.querySelector(
@@ -80,8 +82,6 @@ class searchImageApp {
       'beforeend',
     );
   }
-
- 
 
   loadMoreButtonHadlerCLick() {
     this.axiosImages();
