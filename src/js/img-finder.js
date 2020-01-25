@@ -4,6 +4,10 @@ import photoCardListTemplate from '../templates/photo-card-list.hbs';
 import photoCardItemsTemplate from '../templates/photo-card-items.hbs';
 import loadMoreButtonTemplate from '../templates/load-button.hbs';
 import searchImagesAppTemplate from '../templates/search-image-app.hbs';
+import PNotify from 'pnotify/dist/es/PNotify';
+import PNotifyStyleMaterial from 'pnotify/dist/es/PNotifyStyleMaterial';
+import spinnerTemplate from '../templates/spinner.hbs';
+import spinner from './spinner.js';
 
 class searchImageApp {
   constructor() {
@@ -13,6 +17,7 @@ class searchImageApp {
     this.imageList = null;
     this.loadMoreBtn = null;
     this.inputValue = null;
+    this.spinner = null;
 
     this.init();
   }
@@ -27,6 +32,9 @@ class searchImageApp {
     this.imageList = document.querySelector('.js-card-list');
 
     this.searchForm.addEventListener('submit', this.handlerSubmit.bind(this));
+
+    this.createDomElement(this.app, spinnerTemplate(), 'beforeend');
+    this.spinner = document.querySelector('.spinner');
   }
 
   createDomElement(insertElem, element, path) {
@@ -37,6 +45,21 @@ class searchImageApp {
     event.preventDefault();
 
     this.input = event.currentTarget.elements.query;
+
+    if (this.input.value === '') {
+      PNotify.error({
+        text:
+          'No results were found for your request. Please enter valid data!',
+        styling: 'material',
+        icons: 'material',
+        icon: true,
+        width: '260px',
+        minHeight: '120px',
+        delay: 3000,
+      });
+
+      return;
+    }
 
     this.clearImageListItems();
     imagesService.resetPage();
@@ -49,14 +72,42 @@ class searchImageApp {
   }
 
   axiosImages() {
+    spinner.show(this.spinner);
+
     imagesService
       .axiosImages()
       .then(data => {
         if (data.hits.length) {
+          spinner.hide(this.spinner);
+
           this.insertListItems(data.hits);
+
+          PNotify.success({
+            text: 'Successful request!',
+            styling: 'material',
+            icons: 'material',
+            icon: true,
+            width: '155px',
+            addClass: 'pad-top',
+            delay: 2000,
+          });
+
           window.scrollTo({
             top: this.loadMoreBtn.offsetTop,
             behavior: 'smooth',
+          });
+        } else {
+          spinner.hide(this.spinner);
+          PNotify.error({
+            text:
+              'No results were found for your request. Please enter valid data!',
+            styling: 'material',
+            icons: 'material',
+            icon: true,
+            addClass: 'pad-top',
+            width: '260px',
+            minHeight: '120px',
+            delay: 3000,
           });
         }
       })
@@ -93,81 +144,3 @@ class searchImageApp {
 }
 
 new searchImageApp();
-// const refs = {
-//   searchImagesApp: document.querySelector('.js-app'),
-//   // searchForm: document.querySelector('#search-form'),
-//   // galleryList: document.querySelector('.js-gallery'),
-//   // loadMoreBtn: document.querySelector('button[data-action="load-more"]'),
-// };
-
-// createSearchInput();
-// createImageList();
-
-// const testSearchForm = document.querySelector('#search-form');
-// const testImageList = document.querySelector('.js-gallery');
-
-// console.log(testSearchForm);
-
-// testSearchForm.addEventListener('submit', testHandleSubmit);
-
-// function testHandleSubmit(event) {
-//   event.preventDefault();
-
-//   const form = event.currentTarget;
-//   const input = form.elements.query;
-
-//   clearListItems();
-//   imagesService.resetPage();
-//   imagesService.searchQuery = input.value;
-
-//   axiosImages();
-
-//   input.value = '';
-// }
-
-// function axiosImages() {
-//   imagesService
-//     .axiosImages()
-//     .then(data => {
-//       insertListItems(data.hits);
-//     })
-//     .catch(console.error);
-// }
-
-// function loadMoreButtonHadlerCLick() {
-//   axiosImages();
-// }
-
-// function insertListItems(item) {
-//   if (!testImageList.children.length) {
-//     createBtnLoadMore();
-
-//     const loadMoreBtn = document.querySelector(
-//       'button[data-action="load-more"]',
-//     );
-
-//     loadMoreBtn.addEventListener('click', loadMoreButtonHadlerCLick);
-//   }
-
-//   const markup = photoCardItemsTemplate(item);
-//   testImageList.insertAdjacentHTML('beforeend', markup);
-// }
-
-// function createSearchInput() {
-//   refs.searchImagesApp.insertAdjacentHTML('beforeend', searchFormTemplate());
-// }
-
-// function createImageList() {
-//   refs.searchImagesApp.insertAdjacentHTML('beforeend', galleryListTemplate());
-// }
-
-// function createBtnLoadMore() {
-//   refs.searchImagesApp.insertAdjacentHTML(
-//     'beforeend',
-//     loadMoreButtonTemplate(),
-//   );
-// }
-
-// function clearListItems() {
-//   testImageList.innerHTML = '';
-// }
