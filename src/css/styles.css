@@ -110,3 +110,7 @@ body {
   color: rgb(0, 129, 214);
   background-color: rgb(255, 255, 255);
 }
+
+.hide {
+  display: none;
+}

@@ -7,7 +7,7 @@ import searchImagesAppTemplate from '../templates/search-image-app.hbs';
 
 class searchImageApp {
   constructor() {
-    this.body = null;
+    this.body = document.querySelector('body');
     this.app = null;
     this.searchForm = null;
     this.imageList = null;
@@ -18,8 +18,6 @@ class searchImageApp {
   }
 
   init() {
-    this.body = document.querySelector('body');
-
     this.createDomElement(this.body, searchImagesAppTemplate(), 'afterbegin');
     this.app = document.querySelector('.js-app');
 
@@ -62,8 +60,9 @@ class searchImageApp {
   }
 
   insertListItems(item) {
-   
-    if (!this.imageList.children.length) {
+    
+
+    if (!this.imageList.children.length && !this.loadMoreBtn) {
       this.createDomElement(this.app, loadMoreButtonTemplate(), 'beforeend');
       this.loadMoreBtn = document.querySelector(
         'button[data-action="load-more"]',
@@ -81,6 +80,8 @@ class searchImageApp {
       'beforeend',
     );
   }
+
+ 
 
   loadMoreButtonHadlerCLick() {
     this.axiosImages();
