@@ -112,6 +112,10 @@ body {
   border: 2px solid rgb(0, 0, 0);
 }
 
+.btn.is-hidden {
+  display: none;
+}
+
 .spinner {
   display: flex;
   justify-content: space-around;
@@ -212,4 +216,3 @@ body {
 .pos-bot {
   font-size: 14px;
 }
-

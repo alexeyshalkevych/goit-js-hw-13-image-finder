@@ -1,9 +1,6 @@
 import imagesService from './services/api-service.js';
 import searchFormTemplate from '../templates/search-form.hbs';
-import photoCardListTemplate from '../templates/photo-card-list.hbs';
 import photoCardItemsTemplate from '../templates/photo-card-items.hbs';
-import loadMoreButtonTemplate from '../templates/load-button.hbs';
-import searchImagesAppTemplate from '../templates/search-image-app.hbs';
 import PNotify from 'pnotify/dist/es/PNotify';
 import PNotifyStyleMaterial from 'pnotify/dist/es/PNotifyStyleMaterial';
 import spinnerTemplate from '../templates/spinner.hbs';
@@ -12,7 +9,7 @@ import spinner from './spinner.js';
 class searchImageApp {
   constructor() {
     this.body = document.querySelector('body');
-    this.app = null;
+    this.appRoot = null;
     this.searchForm = null;
     this.imageList = null;
     this.loadMoreBtn = null;
@@ -22,25 +19,78 @@ class searchImageApp {
     this.init();
   }
 
+  /**
+   * Method to initialize
+   */
   init() {
-    this.createDomElement(this.body, searchImagesAppTemplate(), 'afterbegin');
-    this.app = document.querySelector('.js-app');
+    this.body.prepend(this.createDomElements());
 
-    this.createDomElement(this.app, searchFormTemplate(), 'beforeend');
-    this.createDomElement(this.app, photoCardListTemplate(), 'beforeend');
-    this.searchForm = document.querySelector('.js-search-form');
-    this.imageList = document.querySelector('.js-card-list');
+    this.setDomElements();
 
     this.searchForm.addEventListener('submit', this.handlerSubmit.bind(this));
+  }
 
-    this.createDomElement(this.app, spinnerTemplate(), 'beforeend');
+  /**
+   * Method for sets all reference
+   */
+  setDomElements() {
+    this.appRoot = document.querySelector('.js-app');
+    this.searchForm = document.querySelector('.js-search-form');
+    this.imageList = document.querySelector('.js-card-list');
+    this.loadMoreBtn = document.querySelector(
+      'button[data-action="load-more"]',
+    );
     this.spinner = document.querySelector('.spinner');
   }
 
-  createDomElement(insertElem, element, path) {
-    insertElem.insertAdjacentHTML(path, element);
+  /**
+   * Method for creates DOM element and return it
+   */
+  createElem(tagName, className) {
+    const element = document.createElement(tagName);
+    element.classList.add(...className);
+
+    return element;
   }
 
+  /**
+   * Method for creates all elements and return them.
+   * appRoot contains all the elements
+   */
+  createDomElements() {
+    const appRoot = this.createElem('div', ['app', 'js-app']);
+
+    const form = this.createElem('form', ['search-form', 'js-search-form']);
+
+    const inputMarkup = searchFormTemplate();
+    this.insertElement(form, inputMarkup, 'beforeend');
+
+    const list = this.createElem('ul', ['card-list', 'js-card-list']);
+
+    const button = this.createElem('button', ['btn', 'is-hidden']);
+    button.dataset.action = 'load-more';
+    button.textContent = 'load more';
+
+    const spin = this.createElem('div', ['spinner', 'js-spinner', 'is-hidden']);
+
+    const spinMarkup = spinnerTemplate();
+    this.insertElement(spin, spinMarkup, 'beforeend');
+
+    appRoot.append(form, list, button, spin);
+
+    return appRoot;
+  }
+
+  /**
+   * Method for insert markup
+   */
+  insertElement(insertElem, markup, path) {
+    insertElem.insertAdjacentHTML(path, markup);
+  }
+
+  /**
+   * Method for handler form submit
+   */
   handlerSubmit(event) {
     event.preventDefault();
 
@@ -50,12 +100,9 @@ class searchImageApp {
       PNotify.error({
         text:
           'No results were found for your request. Please enter valid data!',
-        styling: 'material',
-        icons: 'material',
-        icon: true,
+        ...this.pnotifySettings(),
         width: '260px',
         minHeight: '120px',
-        delay: 3000,
       });
 
       return;
@@ -66,12 +113,29 @@ class searchImageApp {
 
     imagesService.searchQuery = this.input.value;
 
-    this.axiosImages();
+    this.getListCardImages();
 
     this.input.value = '';
   }
 
-  axiosImages() {
+  /**
+   * Method for settings Pnotify plugin
+   */
+  pnotifySettings() {
+    return {
+      styling: 'material',
+      icons: 'material',
+      icon: true,
+      width: '155px',
+      addClass: 'pad-top',
+      delay: 2000,
+    };
+  }
+
+  /**
+   * Method for getting a list card images using the imagesService
+   */
+  getListCardImages() {
     spinner.show(this.spinner);
 
     imagesService
@@ -84,12 +148,7 @@ class searchImageApp {
 
           PNotify.success({
             text: 'Successful request!',
-            styling: 'material',
-            icons: 'material',
-            icon: true,
-            width: '155px',
-            addClass: 'pad-top',
-            delay: 2000,
+            ...this.pnotifySettings(),
           });
 
           window.scrollTo({
@@ -98,28 +157,28 @@ class searchImageApp {
           });
         } else {
           spinner.hide(this.spinner);
+
           PNotify.error({
             text:
               'No results were found for your request. Please enter valid data!',
-            styling: 'material',
-            icons: 'material',
-            icon: true,
-            addClass: 'pad-top',
+            ...this.pnotifySettings(),
             width: '260px',
             minHeight: '120px',
-            delay: 3000,
           });
         }
       })
       .catch(console.error);
   }
 
+  /**
+   * Method for insert list card images
+   */
   insertListItems(item) {
-    if (!this.imageList.children.length && !this.loadMoreBtn) {
-      this.createDomElement(this.app, loadMoreButtonTemplate(), 'beforeend');
-      this.loadMoreBtn = document.querySelector(
-        'button[data-action="load-more"]',
-      );
+    if (
+      !this.imageList.children.length &&
+      this.loadMoreBtn.classList.contains('is-hidden')
+    ) {
+      this.loadMoreBtn.classList.remove('is-hidden');
 
       this.loadMoreBtn.addEventListener(
         'click',
@@ -127,17 +186,21 @@ class searchImageApp {
       );
     }
 
-    this.createDomElement(
-      this.imageList,
-      photoCardItemsTemplate(item),
-      'beforeend',
-    );
+    const cardItemMarkup = photoCardItemsTemplate(item);
+
+    this.insertElement(this.imageList, cardItemMarkup, 'beforeend');
   }
 
+  /**
+   * Method for handler button click
+   */
   loadMoreButtonHadlerCLick() {
-    this.axiosImages();
+    this.getListCardImages();
   }
 
+  /**
+   * Method for clearing list with cards
+   */
   clearImageListItems() {
     this.imageList.innerHTML = '';
   }
