@@ -1,20 +1,19 @@
 import imagesService from './services/api-service.js';
-import searchFormTemplate from '../templates/search-form.hbs';
 import photoCardItemsTemplate from '../templates/photo-card-items.hbs';
 import PNotify from 'pnotify/dist/es/PNotify';
 import PNotifyStyleMaterial from 'pnotify/dist/es/PNotifyStyleMaterial';
-import spinnerTemplate from '../templates/spinner.hbs';
 import spinner from './spinner.js';
 
 class searchImageApp {
   constructor() {
     this.body = document.querySelector('body');
-    this.appRoot = null;
+    this.proxyElement = document.createElement('div');
     this.searchForm = null;
     this.imageList = null;
     this.loadMoreBtn = null;
     this.inputValue = null;
     this.spinner = null;
+    this.items = null;
 
     this.init();
   }
@@ -28,13 +27,16 @@ class searchImageApp {
     this.setDomElements();
 
     this.searchForm.addEventListener('submit', this.handlerSubmit.bind(this));
+    this.loadMoreBtn.addEventListener(
+      'click',
+      this.loadMoreButtonHadlerCLick.bind(this),
+    );
   }
 
   /**
    * Method for sets all reference
    */
   setDomElements() {
-    this.appRoot = document.querySelector('.js-app');
     this.searchForm = document.querySelector('.js-search-form');
     this.imageList = document.querySelector('.js-card-list');
     this.loadMoreBtn = document.querySelector(
@@ -44,7 +46,7 @@ class searchImageApp {
   }
 
   /**
-   * Method for creates DOM element and return it
+   * Method for create DOM element and return it
    */
   createElem(tagName, className) {
     const element = document.createElement(tagName);
@@ -62,8 +64,14 @@ class searchImageApp {
 
     const form = this.createElem('form', ['search-form', 'js-search-form']);
 
-    const inputMarkup = searchFormTemplate();
-    this.insertElement(form, inputMarkup, 'beforeend');
+    const inputMarkup = this.createElem('input', ['search-form__input']);
+
+    inputMarkup.type = 'text';
+    inputMarkup.name = 'query';
+    inputMarkup.autocomplete = 'off';
+    inputMarkup.placeholder = 'Search images...';
+
+    form.append(inputMarkup);
 
     const list = this.createElem('ul', ['card-list', 'js-card-list']);
 
@@ -71,10 +79,7 @@ class searchImageApp {
     button.dataset.action = 'load-more';
     button.textContent = 'load more';
 
-    const spin = this.createElem('div', ['spinner', 'js-spinner', 'is-hidden']);
-
-    const spinMarkup = spinnerTemplate();
-    this.insertElement(spin, spinMarkup, 'beforeend');
+    const spin = this.createSpinnerElement();
 
     appRoot.append(form, list, button, spin);
 
@@ -82,10 +87,26 @@ class searchImageApp {
   }
 
   /**
-   * Method for insert markup
+   * Method create Spinner and return it
    */
-  insertElement(insertElem, markup, path) {
-    insertElem.insertAdjacentHTML(path, markup);
+  createSpinnerElement() {
+    const spinnerElement = this.createElem('div', [
+      'spinner',
+      'js-spinner',
+      'is-hidden',
+    ]);
+
+    const firstSpinnerELement = this.createElem('div', ['loader', 'first']);
+    const secondSpinnerELement = this.createElem('div', ['loader', 'second']);
+    const thirdSpinnerELement = this.createElem('div', ['loader', 'third']);
+
+    spinnerElement.append(
+      firstSpinnerELement,
+      secondSpinnerELement,
+      thirdSpinnerELement,
+    );
+
+    return spinnerElement;
   }
 
   /**
@@ -144,7 +165,7 @@ class searchImageApp {
         if (data.hits.length) {
           spinner.hide(this.spinner);
 
-          this.insertListItems(data.hits);
+          this.addedListItems(data.hits);
 
           PNotify.success({
             text: 'Successful request!',
@@ -171,24 +192,28 @@ class searchImageApp {
   }
 
   /**
-   * Method for insert list card images
+   * Method for created card items and returned them
    */
-  insertListItems(item) {
+  createPhotoCardItems(items) {
+    return items.map(item => photoCardItemsTemplate(item));
+  }
+
+  /**
+   * Method for added to list card image
+   */
+  addedListItems(item) {
     if (
       !this.imageList.children.length &&
       this.loadMoreBtn.classList.contains('is-hidden')
     ) {
       this.loadMoreBtn.classList.remove('is-hidden');
-
-      this.loadMoreBtn.addEventListener(
-        'click',
-        this.loadMoreButtonHadlerCLick.bind(this),
-      );
     }
 
-    const cardItemMarkup = photoCardItemsTemplate(item);
+    this.proxyElement.innerHTML = this.createPhotoCardItems(item);
 
-    this.insertElement(this.imageList, cardItemMarkup, 'beforeend');
+    this.items = this.proxyElement.querySelectorAll('.card-list__item');
+
+    this.imageList.append(...this.items);
   }
 
   /**
